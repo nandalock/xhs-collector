@@ -1,0 +1,4 @@
+interface:
+  display_name: "小红书资料采集"
+  short_description: "独立采集小红书笔记和评论，支持续跑及 RAG 文档导出"
+  default_prompt: "使用 $xhs-collector 根据我的关键词或链接收集小红书资料，并报告保存位置与采集结果。"

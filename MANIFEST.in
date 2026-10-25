@@ -1,0 +1,11 @@
+include LICENSE NOTICE README.md VALIDATION.md requirements.lock
+recursive-include scripts *.py
+recursive-include skills *.md *.py *.yaml
+recursive-include docs *.md *.svg
+prune runs
+prune .venv
+prune .runtime
+prune .pytest_cache
+prune build
+prune dist
+global-exclude __pycache__ *.py[cod] .env session.json *.sqlite3 *.sqlite3-wal *.sqlite3-shm

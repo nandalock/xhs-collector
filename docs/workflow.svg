@@ -1,0 +1,272 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1560" viewBox="0 0 1440 1560" role="img" aria-labelledby="svg-title svg-desc">
+  <title id="svg-title">xhs-collector 运作流程</title>
+  <desc id="svg-desc">五阶段流程图：登录、新建任务、主循环、请求层、状态与导出。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#4a5568"/>
+    </marker>
+    <style><![CDATA[
+      text {
+        font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+      }
+      .title       { font-size: 30px; font-weight: 700; fill: #1a202c; }
+      .subtitle    { font-size: 14px; fill: #4a5568; }
+      .stage       { font-size: 16px; font-weight: 700; fill: #ffffff; }
+      .stage-note  { font-size: 12.5px; fill: #4a5568; }
+      .box-title   { font-size: 14px; font-weight: 700; fill: #1a202c; }
+      .box-text    { font-size: 12.5px; fill: #2d3748; }
+      .arrow-label { font-size: 11.5px; fill: #4a5568; }
+      .footer      { font-size: 11.5px; fill: #718096; }
+      .note        { font-size: 12.5px; fill: #4a5568; }
+    ]]></style>
+  </defs>
+
+  <rect width="1440" height="1560" fill="#ffffff"/>
+
+  <text class="title" x="40" y="46">xhs-collector 运作流程</text>
+  <text class="subtitle" x="40" y="74">独立的 Python 采集包 + Codex skill ｜ SQLite 是唯一状态真相，JSONL / Markdown 是可重建的导出物</text>
+
+  <!-- ================= ① 登录 ================= -->
+  <rect x="24" y="84" width="1392" height="184" rx="14" fill="#f5f9ff"/>
+  <rect x="40" y="94" width="210" height="30" rx="15" fill="#2f6fbf"/>
+  <text class="stage" x="145" y="114" text-anchor="middle">① 登录（一次性）</text>
+  <text class="stage-note" x="270" y="114">之后采集不再打开浏览器，复用 session.json</text>
+
+  <rect x="40" y="142" width="300" height="88" rx="10" fill="#e8f1fd" stroke="#2f6fbf" stroke-width="1.4"/>
+  <text class="box-title" x="56" y="168">login 子命令</text>
+  <text class="box-text" x="56" y="190">Playwright 持久化上下文</text>
+  <text class="box-text" x="56" y="208">headless=False；--browser auto</text>
+
+  <rect x="380" y="142" width="300" height="88" rx="10" fill="#e8f1fd" stroke="#2f6fbf" stroke-width="1.4"/>
+  <text class="box-title" x="396" y="168">打开 xiaohongshu.com</text>
+  <text class="box-text" x="396" y="190">用户手动扫码 / 登录</text>
+  <text class="box-text" x="396" y="208">工具不代填、不触发短信</text>
+
+  <rect x="720" y="142" width="300" height="88" rx="10" fill="#e8f1fd" stroke="#2f6fbf" stroke-width="1.4"/>
+  <text class="box-title" x="736" y="168">每 5 秒轮询 Cookie</text>
+  <text class="box-text" x="736" y="190">需要 web_session + a1</text>
+  <text class="box-text" x="736" y="208">--timeout 15–600 秒</text>
+
+  <rect x="1060" y="142" width="300" height="88" rx="10" fill="#e8f1fd" stroke="#2f6fbf" stroke-width="1.4"/>
+  <text class="box-title" x="1076" y="168">验证通过才保存</text>
+  <text class="box-text" x="1076" y="190">GET /api/sns/web/v1/user/selfinfo</text>
+  <text class="box-text" x="1076" y="208">原子写 session.json（chmod 600）</text>
+
+  <path d="M340 186 H378" stroke="#4a5568" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+  <path d="M680 186 H718" stroke="#4a5568" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+  <path d="M1020 186 H1058" stroke="#4a5568" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+
+  <text class="note" x="40" y="254">状态目录：%LOCALAPPDATA%\xhs-collector（XHS_COLLECTOR_HOME 可覆盖）｜session.json 与 browser-profile 属本地凭据，不进入导出物。</text>
+
+  <!-- ================= ② 新建任务 ================= -->
+  <rect x="24" y="280" width="1392" height="222" rx="14" fill="#f9f7ff"/>
+  <rect x="40" y="296" width="300" height="30" rx="15" fill="#7c5cbf"/>
+  <text class="stage" x="190" y="316" text-anchor="middle">② 新建采集任务</text>
+  <text class="stage-note" x="360" y="316">三种模式互斥；URL 必须含 xsec_token，短链接不支持</text>
+
+  <rect x="40" y="344" width="230" height="44" rx="9" fill="#f1ecfd" stroke="#7c5cbf" stroke-width="1.4"/>
+  <text class="box-text" x="56" y="371">search --keyword ……</text>
+  <rect x="40" y="398" width="230" height="44" rx="9" fill="#f1ecfd" stroke="#7c5cbf" stroke-width="1.4"/>
+  <text class="box-text" x="56" y="425">detail --url ……</text>
+  <rect x="40" y="452" width="230" height="44" rx="9" fill="#f1ecfd" stroke="#7c5cbf" stroke-width="1.4"/>
+  <text class="box-text" x="56" y="479">creator --url ……</text>
+
+  <path d="M270 366 H292" stroke="#4a5568" stroke-width="1.6" fill="none"/>
+  <path d="M270 420 H292" stroke="#4a5568" stroke-width="1.6" fill="none"/>
+  <path d="M270 474 H292" stroke="#4a5568" stroke-width="1.6" fill="none"/>
+  <path d="M292 366 V474" stroke="#4a5568" stroke-width="1.6" fill="none"/>
+  <path d="M292 420 H318" stroke="#4a5568" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+
+  <rect x="320" y="344" width="340" height="152" rx="10" fill="#f1ecfd" stroke="#7c5cbf" stroke-width="1.4"/>
+  <text class="box-title" x="336" y="370">initialize()：锁定本次范围</text>
+  <text class="box-text" x="336" y="394">spec 写入 meta，创建后不可修改</text>
+  <text class="box-text" x="336" y="414">run.json 记录公开配置（无 token）</text>
+  <text class="box-text" x="336" y="434">meta.status = ready</text>
+  <text class="box-text" x="336" y="454">同一目录已有 spec → 拒绝重建</text>
+  <text class="box-text" x="336" y="474">新范围请使用新的 run 目录</text>
+
+  <path d="M660 420 H718" stroke="#4a5568" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+
+  <rect x="720" y="344" width="320" height="152" rx="10" fill="#e8f7ee" stroke="#2f8f5b" stroke-width="1.4"/>
+  <text class="box-title" x="736" y="370">SQLite tasks 入队（key UNIQUE）</text>
+  <text class="box-text" x="736" y="394">search:&lt;keyword&gt;:1</text>
+  <text class="box-text" x="736" y="414">note:&lt;24 位笔记 ID&gt;</text>
+  <text class="box-text" x="736" y="434">creator:&lt;user_id&gt;:</text>
+  <text class="box-text" x="736" y="454">重复入队自动忽略</text>
+  <text class="box-text" x="736" y="474">按 id 升序逐个处理</text>
+
+  <rect x="1100" y="344" width="300" height="152" rx="10" fill="#f7f8fa" stroke="#cbd5e0" stroke-width="1.4"/>
+  <text class="box-title" x="1116" y="370">凭据与数据边界</text>
+  <text class="box-text" x="1116" y="394">run.json：不含 xsec_token</text>
+  <text class="box-text" x="1116" y="414">state.sqlite3：含恢复用 token</text>
+  <text class="box-text" x="1116" y="434">→ 内部文件，不对外分享</text>
+  <text class="box-text" x="1116" y="454">snapshots 与导出：已 redact</text>
+  <text class="box-text" x="1116" y="474">session.json：本地登录凭据</text>
+
+  <!-- ================= ③ 主循环 ================= -->
+  <rect x="24" y="508" width="1392" height="512" rx="14" fill="#f5fbf7"/>
+  <rect x="40" y="516" width="360" height="30" rx="15" fill="#2f8f5b"/>
+  <text class="stage" x="220" y="536" text-anchor="middle">③ 主循环 collect()</text>
+  <text class="stage-note" x="420" y="536">取任务直到没有 pending；每个任务的产出与分页游标在同一事务提交</text>
+
+  <rect x="40" y="576" width="200" height="76" rx="10" fill="#e8f1fd" stroke="#2f6fbf" stroke-width="1.4"/>
+  <text class="box-title" x="56" y="602">verify()</text>
+  <text class="box-text" x="56" y="624">有 pending 才执行</text>
+  <text class="box-text" x="56" y="642">校验登录态</text>
+
+  <rect x="300" y="576" width="200" height="76" rx="10" fill="#e8f1fd" stroke="#2f6fbf" stroke-width="1.4"/>
+  <text class="box-title" x="316" y="602">next_task()</text>
+  <text class="box-text" x="316" y="624">pending ORDER BY id</text>
+  <text class="box-text" x="316" y="642">取最早入队任务</text>
+
+  <rect x="560" y="576" width="200" height="76" rx="10" fill="#e8f1fd" stroke="#2f6fbf" stroke-width="1.4"/>
+  <text class="box-title" x="576" y="602">队列耗尽</text>
+  <text class="box-text" x="576" y="624">有 failed → partial</text>
+  <text class="box-text" x="576" y="642">否则 → completed</text>
+
+  <path d="M240 614 H298" stroke="#4a5568" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+  <path d="M500 614 H558" stroke="#4a5568" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+  <text class="arrow-label" x="516" y="606">无</text>
+
+  <rect x="40" y="716" width="200" height="76" rx="10" fill="#e8f1fd" stroke="#2f6fbf" stroke-width="1.4"/>
+  <text class="box-title" x="56" y="742">process(task)</text>
+  <text class="box-text" x="56" y="764">按 kind 分派</text>
+  <text class="box-text" x="56" y="782">可能追加新任务</text>
+
+  <rect x="300" y="716" width="200" height="76" rx="10" fill="#e8f1fd" stroke="#2f6fbf" stroke-width="1.4"/>
+  <text class="box-title" x="316" y="742">同一 SQLite 事务</text>
+  <text class="box-text" x="316" y="764">结果 + 分页游标</text>
+  <text class="box-text" x="316" y="782">task.status = done</text>
+
+  <path d="M320 652 V694 H140 V714" stroke="#4a5568" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+  <text class="arrow-label" x="188" y="687">有 pending</text>
+  <path d="M240 754 H298" stroke="#4a5568" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+  <path d="M400 716 V654" stroke="#4a5568" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+  <text class="arrow-label" x="410" y="690">下一轮</text>
+
+  <rect x="880" y="576" width="520" height="216" rx="10" fill="#fdecec" stroke="#c0392b" stroke-width="1.4"/>
+  <text class="box-title" x="896" y="604" fill="#a93226">异常与停止语义</text>
+  <text class="box-text" x="896" y="632">HALT：auth_required / blocked / rate_limited /</text>
+  <text class="box-text" x="896" y="652">challenge / budget_exhausted</text>
+  <text class="box-text" x="896" y="674">→ 立即停止循环，保留队列，可 resume</text>
+  <text class="box-text" x="896" y="696">普通错误 → task=failed，继续下一个任务</text>
+  <text class="box-text" x="896" y="718">network_error / 5xx → 请求层先重试 3 次</text>
+  <text class="box-text" x="896" y="740">跑完：有 failed → partial，否则 completed</text>
+  <text class="box-text" x="896" y="762">Ctrl-C → interrupted；超时 → budget_exhausted</text>
+
+  <path d="M140 792 V818 H1155" stroke="#4a5568" stroke-width="1.6" fill="none"/>
+  <path d="M255 818 V834" stroke="#4a5568" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+  <path d="M705 818 V834" stroke="#4a5568" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+  <path d="M1155 818 V834" stroke="#4a5568" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+  <text class="arrow-label" x="150" y="811">process 按 task.kind 分派</text>
+
+  <rect x="40" y="836" width="430" height="168" rx="10" fill="#f1ecfd" stroke="#7c5cbf" stroke-width="1.4"/>
+  <text class="box-title" x="56" y="862">search / creator — 发现</text>
+  <text class="box-text" x="56" y="886">POST /api/sns/web/v1/search/notes</text>
+  <text class="box-text" x="56" y="906">GET  /api/sns/web/v1/user_posted</text>
+  <text class="box-text" x="56" y="926">跳过 rec_query / hot_query 等非笔记项</text>
+  <text class="box-text" x="56" y="946">按 note_id 去重；全局 max_notes 限额</text>
+  <text class="box-text" x="56" y="966">has_more 且未到 max_pages → 追加下一页</text>
+  <text class="box-text" x="56" y="986">末页条目始终处理；游标不前进记警告</text>
+
+  <rect x="490" y="836" width="430" height="168" rx="10" fill="#e8f7ee" stroke="#2f8f5b" stroke-width="1.4"/>
+  <text class="box-title" x="506" y="862">note — 详情</text>
+  <text class="box-text" x="506" y="886">POST /api/sns/web/v1/feed（带签名）</text>
+  <text class="box-text" x="506" y="906">解析 / API / 5xx / 网络失败 → 降级</text>
+  <text class="box-text" x="506" y="926">GET /explore/&lt;id&gt; 抓 HTML</text>
+  <text class="box-text" x="506" y="946">解析 __INITIAL_STATE__（不执行 JS）</text>
+  <text class="box-text" x="506" y="966">写 snapshots/&lt;id&gt;.json（redact 脱敏）</text>
+  <text class="box-text" x="506" y="986">写 notes 记录；需要评论则入队</text>
+
+  <rect x="940" y="836" width="430" height="168" rx="10" fill="#fff3e2" stroke="#c77c1f" stroke-width="1.4"/>
+  <text class="box-title" x="956" y="862">comments — 评论</text>
+  <text class="box-text" x="956" y="886">GET /api/sns/web/v2/comment/page（一级）</text>
+  <text class="box-text" x="956" y="906">GET /api/sns/web/v2/comment/sub/page（回复）</text>
+  <text class="box-text" x="956" y="926">按评论 ID 去重</text>
+  <text class="box-text" x="956" y="946">总数含回复 ≤ max_comments</text>
+  <text class="box-text" x="956" y="966">内嵌 sub_comments / sub_comment_has_more</text>
+  <text class="box-text" x="956" y="986">游标不前进 → pagination_stalled</text>
+
+  <!-- ================= ④ 请求层 ================= -->
+  <rect x="24" y="1026" width="1392" height="178" rx="14" fill="#fffaf3"/>
+  <rect x="40" y="1034" width="380" height="30" rx="15" fill="#c77c1f"/>
+  <text class="stage" x="230" y="1054" text-anchor="middle">④ 请求层 XhsClient.request()</text>
+  <text class="stage-note" x="440" y="1054">process() 内部调用；返回后回到主循环的事务提交</text>
+
+  <rect x="40" y="1078" width="240" height="96" rx="10" fill="#fff3e2" stroke="#c77c1f" stroke-width="1.4"/>
+  <text class="box-title" x="56" y="1104">预算检查</text>
+  <text class="box-text" x="56" y="1128">每次请求前检查 max_requests</text>
+  <text class="box-text" x="56" y="1146">与 max_seconds 截止时间</text>
+  <text class="box-text" x="56" y="1164">超限 → budget_exhausted</text>
+
+  <rect x="310" y="1078" width="240" height="96" rx="10" fill="#fff3e2" stroke="#c77c1f" stroke-width="1.4"/>
+  <text class="box-title" x="326" y="1104">节流与重试预算</text>
+  <text class="box-text" x="326" y="1128">相邻请求 ≥ delay 秒</text>
+  <text class="box-text" x="326" y="1146">默认 2s，最小 1s</text>
+  <text class="box-text" x="326" y="1164">重试也计入请求预算</text>
+
+  <rect x="580" y="1078" width="250" height="96" rx="10" fill="#fff3e2" stroke="#c77c1f" stroke-width="1.4"/>
+  <text class="box-title" x="596" y="1104">xhshow 签名</text>
+  <text class="box-text" x="596" y="1128">GET / POST 分别签名</text>
+  <text class="box-text" x="596" y="1146">Cookie + 参数 / payload</text>
+  <text class="box-text" x="596" y="1164">签完再发出请求</text>
+
+  <rect x="860" y="1078" width="250" height="96" rx="10" fill="#fff3e2" stroke="#c77c1f" stroke-width="1.4"/>
+  <text class="box-title" x="876" y="1104">httpx 异步请求</text>
+  <text class="box-text" x="876" y="1128">follow_redirects=False</text>
+  <text class="box-text" x="876" y="1146">流式读，响应体 ≤ 10 MiB</text>
+  <text class="box-text" x="876" y="1164">超时受剩余时间约束</text>
+
+  <rect x="1140" y="1078" width="260" height="96" rx="10" fill="#fff3e2" stroke="#c77c1f" stroke-width="1.4"/>
+  <text class="box-title" x="1156" y="1104">错误分类</text>
+  <text class="box-text" x="1156" y="1128">401/403/429/461/471</text>
+  <text class="box-text" x="1156" y="1146">5xx / 网络 → 最多 3 次</text>
+  <text class="box-text" x="1156" y="1164">业务码同样映射为类型</text>
+
+  <path d="M280 1126 H308" stroke="#4a5568" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+  <path d="M550 1126 H578" stroke="#4a5568" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+  <path d="M830 1126 H858" stroke="#4a5568" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+  <path d="M1110 1126 H1138" stroke="#4a5568" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+
+  <text class="note" x="40" y="1196">401→auth_required；403→blocked；429→rate_limited（记录 Retry-After）；461/471→challenge；300011/300012→blocked；-510000/-510001→not_found。受限不会触发 HTML 降级。</text>
+
+  <!-- ================= ⑤ 状态与导出 ================= -->
+  <rect x="24" y="1210" width="1392" height="250" rx="14" fill="#f4fbfb"/>
+  <rect x="40" y="1218" width="320" height="30" rx="15" fill="#1b7f8c"/>
+  <text class="stage" x="200" y="1238" text-anchor="middle">⑤ 状态、导出与读取</text>
+  <text class="stage-note" x="380" y="1238">SQLite 为真相；文件是导出物，随时可离线重建</text>
+
+  <rect x="40" y="1262" width="420" height="176" rx="10" fill="#e8f7ee" stroke="#2f8f5b" stroke-width="1.4"/>
+  <text class="box-title" x="56" y="1288">SQLite 是唯一状态真相（WAL）</text>
+  <text class="box-text" x="56" y="1312">meta：spec / status / requests_total</text>
+  <text class="box-text" x="56" y="1332">tasks：pending → done / failed</text>
+  <text class="box-text" x="56" y="1352">notes / comments：按平台 ID 幂等</text>
+  <text class="box-text" x="56" y="1372">sources：笔记来源；events：错误与警告</text>
+  <text class="box-text" x="56" y="1392">.lock 文件锁：同一 run 禁止并发</text>
+  <text class="box-text" x="56" y="1412">续跑不重复写已保存记录</text>
+
+  <rect x="490" y="1262" width="560" height="176" rx="10" fill="#e6f7f7" stroke="#1b7f8c" stroke-width="1.4"/>
+  <text class="box-title" x="506" y="1288">export()：finally 必执行，可离线重建</text>
+  <text class="box-text" x="506" y="1312">notes.jsonl / comments.jsonl</text>
+  <text class="box-text" x="506" y="1332">documents.jsonl：doc_id、text、source_url、</text>
+  <text class="box-text" x="506" y="1352">fetched_at、content_hash（RAG 契约）</text>
+  <text class="box-text" x="506" y="1372">clean/&lt;id&gt;.md：每篇笔记 Markdown</text>
+  <text class="box-text" x="506" y="1392">snapshots/&lt;id&gt;.json：脱敏详情</text>
+  <text class="box-text" x="506" y="1412">report.json：进度、失败分类、可否续跑</text>
+
+  <rect x="1080" y="1262" width="320" height="176" rx="10" fill="#f7f8fa" stroke="#cbd5e0" stroke-width="1.4"/>
+  <text class="box-title" x="1096" y="1288">读取与续跑</text>
+  <text class="box-text" x="1096" y="1312">report --run &lt;dir&gt;</text>
+  <text class="box-text" x="1096" y="1332">show --doc xhs:note:&lt;id&gt;</text>
+  <text class="box-text" x="1096" y="1352">resume --run &lt;dir&gt;</text>
+  <text class="box-text" x="1096" y="1372">resume --retry-failed</text>
+  <text class="box-text" x="1096" y="1392">exit 0 成功；2 非成功；130 中断</text>
+  <text class="box-text" x="1096" y="1412">demo：合成数据，data_origin 标记</text>
+
+  <path d="M460 1350 H488" stroke="#4a5568" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+  <path d="M1050 1350 H1078" stroke="#4a5568" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+
+  <text class="note" x="40" y="1490">所有命令输出单行 JSON。agent 先看 report 摘要，再用 show --offset / --max-chars 按需切片，不把全量笔记读入上下文。</text>
+  <text class="note" x="40" y="1512">demo 走同一条 HTTP 客户端 → 队列 → 导出路径，仅用 MockTransport 提供合成响应，不能当作真实采集结果。</text>
+  <text class="footer" x="720" y="1544" text-anchor="middle">xhs-collector 0.1.0 ｜ 接口映射改编自 MediaCrawler（非商业学习许可证 1.1）｜ SQLite 检查点 + 可重建导出</text>
+</svg>

@@ -1,0 +1,18 @@
+xhs-collector 0.1.0
+
+Platform interface mapping and xhshow signing integration are adapted from:
+MediaCrawler — Copyright (c) 2024-2025 relakkes@gmail.com
+https://github.com/NanmiCoder/MediaCrawler
+Reference revision: 8f58399 (local checkout used for implementation).
+Reference modules: media_platform/xhs/{core,client,login,extractor,playwright_sign}.py
+
+This derived learning project retains NON-COMMERCIAL LEARNING LICENSE 1.1.
+The complete upstream license is in LICENSE. It limits use to non-commercial
+learning and research and prohibits large-scale crawling and disruption.
+
+The task queue, CLI, storage/export implementation, tests and Codex skill are
+implemented in this standalone project. No MediaCrawler process or checkout
+is used at runtime. The adapter uses the third-party xhshow library:
+https://github.com/Cloxl/xhshow (MIT, as identified by upstream).
+Other runtime dependencies retain their respective licenses.
+
